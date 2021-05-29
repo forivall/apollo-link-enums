@@ -1,5 +1,5 @@
-import { ApolloLink, Observable } from '@apollo/client';
-import type { FetchResult, NextLink, Operation } from '@apollo/client';
+import { ApolloLink, Observable } from '@apollo/client/core';
+import type { FetchResult, NextLink, Operation } from '@apollo/client/core';
 import type { Subscription } from 'zen-observable-ts';
 
 export default class EnumApolloLink extends ApolloLink {

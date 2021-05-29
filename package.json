@@ -7,6 +7,7 @@
   "author": "inhibitor <inhibitor@kaist.ac.kr>",
   "license": "MIT",
   "scripts": {
+    "prepare": "install-peers",
     "build": "tsc -p tsconfig.json",
     "pre-commit": "yarn typecheck && yarn lint && yarn test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -23,6 +24,7 @@
     "eslint-plugin-import": "^2.23.3",
     "eslint-plugin-prettier": "^3.4.0",
     "husky": "^6.0.0",
+    "install-peers-cli": "^2.2.0",
     "jest": "^27.0.1",
     "prettier": "^2.3.0",
     "ts-jest": "^27.0.1",
@@ -33,6 +35,6 @@
     "@apollo/client": "^3.3.19"
   },
   "peerDependencies": {
-    "graphql": "^15.0.0"
+    "graphql": "^14.0.0 || ^15.0.0"
   }
 }
