@@ -8,12 +8,14 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "pre-commit": "yarn typecheck && yarn lint",
+    "pre-commit": "yarn typecheck && yarn lint && yarn test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "npx eslint",
+    "test": "npx jest --coverage -c jest.config.js",
     "clean": "rm -r build/"
   },
   "devDependencies": {
+    "@types/jest": "^26.0.23",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "eslint": "^7.27.0",
     "eslint-config-airbnb-typescript": "^12.3.1",
@@ -21,7 +23,9 @@
     "eslint-plugin-import": "^2.23.3",
     "eslint-plugin-prettier": "^3.4.0",
     "husky": "^6.0.0",
+    "jest": "^27.0.1",
     "prettier": "^2.3.0",
+    "ts-jest": "^27.0.1",
     "typescript": "^4.3.2",
     "zen-observable-ts": "^1.0.0"
   },
