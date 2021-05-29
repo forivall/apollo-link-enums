@@ -1,0 +1,27 @@
+{
+  "name": "apollo-link-enums",
+  "version": "0.1.0",
+  "description": "Custom apollo link to parse custom enums, for apollo rest links",
+  "main": "build/main/index.js",
+  "repository": "https://github.com/inhibitor1217/apollo-link-enums",
+  "author": "inhibitor <inhibitor@kaist.ac.kr>",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "pre-commit": "yarn typecheck && yarn lint",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "npx eslint",
+    "clean": "rm -r build/"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.25.0",
+    "eslint": "^7.27.0",
+    "eslint-config-airbnb-typescript": "^12.3.1",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.23.3",
+    "eslint-plugin-prettier": "^3.4.0",
+    "husky": "^6.0.0",
+    "prettier": "^2.3.0",
+    "typescript": "^4.3.2"
+  }
+}

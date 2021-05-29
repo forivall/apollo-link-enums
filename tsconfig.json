@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "outDir": "build",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "baseUrl": "src",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "isolatedModules": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules/**"]
+}
