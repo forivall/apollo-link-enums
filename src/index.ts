@@ -1,3 +1,1 @@
-export default function hi() {
-  console.log('hello, world!');
-}
+export { default as EnumApolloLink } from './EnumApolloLink';

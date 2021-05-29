@@ -4,6 +4,7 @@
     "outDir": "build",
     "lib": ["dom", "dom.iterable", "esnext"],
     "baseUrl": "src",
+    "declaration": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
