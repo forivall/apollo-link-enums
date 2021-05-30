@@ -132,4 +132,66 @@ describe('The variables in the requests should be transformed', () => {
 
     expect.assertions(1);
   });
+
+  it('null value works', (done) => {
+    const request = {
+      query,
+      variables: {
+        animal: null,
+        animals: [null, ClientAnimal.FANCY_CAT],
+        personInput: { person: null },
+      },
+      operationName: getOperationName(query) ?? undefined,
+    };
+
+    const response = {
+      data: {
+        givenAnimal: null,
+        givenAnimals: [null, ServerAnimal.FancyCat],
+        person: null,
+      },
+    };
+
+    const serializer = {
+      Animal: (animal: ClientAnimal) => {
+        switch (animal) {
+          case ClientAnimal.CAT:
+            return ServerAnimal.Cat;
+          case ClientAnimal.DOG:
+            return ServerAnimal.Dog;
+          case ClientAnimal.FANCY_CAT:
+            return ServerAnimal.FancyCat;
+        }
+      },
+      Person: (person: ClientPerson) => {
+        switch (person) {
+          case ClientPerson.User:
+            return ServerPerson.User;
+          case ClientPerson.AnonymousUser:
+            return ServerPerson.AnonymousUser;
+        }
+      },
+    };
+
+    const link = ApolloLink.from([
+      new EnumApolloLink({ schema, serializer }),
+      new ApolloLink((operation) => {
+        expect(operation.variables).toEqual({
+          animal: null,
+          animals: [null, ServerAnimal.FancyCat],
+          personInput: { person: null },
+        });
+
+        return Observable.of(response);
+      }),
+    ]);
+
+    const observable = execute(link, request);
+
+    observable.subscribe(() => {
+      done();
+    });
+
+    expect.assertions(1);
+  });
 });
