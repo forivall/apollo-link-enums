@@ -194,4 +194,57 @@ describe('The variables in the requests should be transformed', () => {
 
     expect.assertions(1);
   });
+
+  it('Using enum value map works', (done) => {
+    const request = {
+      query,
+      variables: {
+        animal: ClientAnimal.CAT,
+        animals: [null, ClientAnimal.FANCY_CAT],
+        personInput: { person: ClientPerson.AnonymousUser },
+      },
+      operationName: getOperationName(query) ?? undefined,
+    };
+
+    const response = {
+      data: {
+        givenAnimal: ServerAnimal.Cat,
+        givenAnimals: [null, ServerAnimal.FancyCat],
+        person: ServerPerson.AnonymousUser,
+      },
+    };
+
+    const valueMap = {
+      Animal: {
+        [ClientAnimal.DOG]: ServerAnimal.Dog,
+        [ClientAnimal.CAT]: ServerAnimal.Cat,
+        [ClientAnimal.FANCY_CAT]: ServerAnimal.FancyCat,
+      },
+      Person: {
+        [ClientPerson.User]: ServerPerson.User,
+        [ClientPerson.AnonymousUser]: ServerPerson.AnonymousUser,
+      },
+    };
+
+    const link = ApolloLink.from([
+      new EnumApolloLink({ schema, enumValueMap: valueMap }),
+      new ApolloLink((operation) => {
+        expect(operation.variables).toEqual({
+          animal: ServerAnimal.Cat,
+          animals: [null, ServerAnimal.FancyCat],
+          personInput: { person: ServerPerson.AnonymousUser },
+        });
+
+        return Observable.of(response);
+      }),
+    ]);
+
+    const observable = execute(link, request);
+
+    observable.subscribe(() => {
+      done();
+    });
+
+    expect.assertions(1);
+  });
 });

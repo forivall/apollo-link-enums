@@ -12,28 +12,26 @@ import type { GraphQLInputType, GraphQLSchema, NamedTypeNode, TypeNode } from 'g
 import { isNil, mapValues } from 'lodash';
 import type { Subscription } from 'zen-observable-ts';
 
+import type { EnumApolloLinkArgs, EnumSerializeFn, EnumValueMap } from './types';
 import { isListTypeNode, isNonNullTypeNode, isOperationDefinitionNode } from './util/NodeTypes';
-
-export type EnumSerializeFn = (value: any) => string | null;
 
 const noopSerializeFn: EnumSerializeFn = (value) => value;
 
-export interface EnumApolloLinkArgs {
-  schema: GraphQLSchema;
-  /* serialization options */
-  serializer?: Record<string, EnumSerializeFn>;
-}
-
 export default class EnumApolloLink extends ApolloLink {
   private readonly schema: GraphQLSchema;
+
   private readonly serializer?: Record<string, EnumSerializeFn>;
   private readonly defaultSerializer: EnumSerializeFn = noopSerializeFn;
 
-  constructor({ schema, serializer }: EnumApolloLinkArgs) {
+  private readonly enumValueMap?: Record<string, EnumValueMap>;
+
+  constructor({ schema, serializer, enumValueMap }: EnumApolloLinkArgs) {
     super();
 
     this.schema = schema;
     this.serializer = serializer;
+
+    this.enumValueMap = enumValueMap;
   }
 
   public request(givenOperation: Operation, forward: NextLink): Observable<FetchResult> | null {
@@ -112,7 +110,7 @@ export default class EnumApolloLink extends ApolloLink {
     }
 
     if (isEnumType(type)) {
-      return (this.serializer?.[type.name] ?? this.defaultSerializer)(value);
+      return this.getSerializer(type.name)(value);
     }
 
     if (isListType(type)) {
@@ -132,5 +130,23 @@ export default class EnumApolloLink extends ApolloLink {
     }
 
     return value;
+  }
+
+  private getSerializer(enumName: string): EnumSerializeFn {
+    return (
+      this.serializer?.[enumName] ??
+      this.getSerializerFromValueMap(enumName) ??
+      this.defaultSerializer
+    );
+  }
+
+  private getSerializerFromValueMap(enumName: string): EnumSerializeFn | undefined {
+    if (!this.enumValueMap?.[enumName]) {
+      return;
+    }
+
+    return (value: any) => {
+      return this.enumValueMap?.[enumName]?.[value] ?? value;
+    };
   }
 }
