@@ -7,8 +7,19 @@ import {
   isInputType,
   isListType,
   isNonNullType,
+  isObjectType,
 } from 'graphql';
-import type { GraphQLInputType, GraphQLSchema, NamedTypeNode, TypeNode } from 'graphql';
+import type {
+  FieldNode,
+  FragmentDefinitionNode,
+  GraphQLInputType,
+  GraphQLOutputType,
+  GraphQLObjectType,
+  GraphQLSchema,
+  NamedTypeNode,
+  SelectionNode,
+  TypeNode,
+} from 'graphql';
 import {
   camelCase,
   flow,
@@ -21,16 +32,25 @@ import {
 } from 'lodash';
 import type { Subscription } from 'zen-observable-ts';
 
-import {
+import { EnumValueFormat } from './types';
+import type {
   EnumApolloLinkArgs,
   EnumSerializeFn,
-  EnumValueFormat,
+  EnumParserFn,
   EnumValueFormats,
   EnumValueMap,
 } from './types';
-import { isListTypeNode, isNonNullTypeNode, isOperationDefinitionNode } from './util/NodeTypes';
+import {
+  isFieldNode,
+  isFragmentDefinitionNode,
+  isListTypeNode,
+  isNonNullTypeNode,
+  isOperationDefinitionNode,
+} from './util/nodeTypes';
+import resolveFragments from './util/resolveFragments';
 
 const noopSerializeFn: EnumSerializeFn = (value) => value;
+const noopParserFn: EnumParserFn = (value) => value;
 
 export default class EnumApolloLink extends ApolloLink {
   private readonly schema: GraphQLSchema;
@@ -38,14 +58,18 @@ export default class EnumApolloLink extends ApolloLink {
   private readonly serializer?: Record<string, EnumSerializeFn>;
   private readonly defaultSerializer: EnumSerializeFn = noopSerializeFn;
 
+  private readonly parser?: Record<string, EnumParserFn>;
+  private readonly defaultParser: EnumParserFn = noopParserFn;
+
   private readonly enumValueMap?: Record<string, EnumValueMap>;
   private readonly valueFormat?: EnumValueFormats;
 
-  constructor({ schema, serializer, enumValueMap, valueFormat }: EnumApolloLinkArgs) {
+  constructor({ schema, serializer, parser, enumValueMap, valueFormat }: EnumApolloLinkArgs) {
     super();
 
     this.schema = schema;
     this.serializer = serializer;
+    this.parser = parser;
 
     this.enumValueMap = enumValueMap;
     this.valueFormat = valueFormat;
@@ -60,7 +84,11 @@ export default class EnumApolloLink extends ApolloLink {
       try {
         sub = forward(operation).subscribe({
           next: (result) => {
-            observer.next(result);
+            try {
+              observer.next(this.pipeResult(operation, result));
+            } catch (e) {
+              observer.next({ errors: [...(result.errors ?? []), e] });
+            }
           },
           error: observer.error.bind(observer),
           complete: observer.complete.bind(observer),
@@ -189,5 +217,107 @@ export default class EnumApolloLink extends ApolloLink {
       default:
         return noopSerializeFn;
     }
+  }
+
+  private pipeResult(operation: Operation, result: FetchResult): FetchResult {
+    const data = result.data;
+
+    if (isNil(data)) {
+      return result;
+    }
+
+    const operationNode = operation.query.definitions.find(isOperationDefinitionNode);
+
+    if (isNil(operationNode)) {
+      return result;
+    }
+
+    const fragmentNodes = operation.query.definitions.filter(isFragmentDefinitionNode);
+
+    const fragmentMap = fragmentNodes.reduce((acc, node) => {
+      acc[node.name.value] = node;
+      return acc;
+    }, {} as Record<string, FragmentDefinitionNode>);
+
+    const resolvedOperationNode = {
+      ...operationNode,
+      selectionSet: {
+        ...operationNode.selectionSet,
+        selections: resolveFragments(operationNode.selectionSet.selections, fragmentMap),
+      },
+    };
+
+    const rootType = ((): GraphQLObjectType | null => {
+      switch (resolvedOperationNode.operation) {
+        case 'query':
+          return this.schema.getQueryType() ?? null;
+        case 'mutation':
+          return this.schema.getMutationType() ?? null;
+        case 'subscription':
+          return this.schema.getSubscriptionType() ?? null;
+      }
+    })();
+
+    if (isNil(rootType)) {
+      return result;
+    }
+
+    const rootSelections = resolvedOperationNode.selectionSet.selections.filter(isFieldNode);
+    const fieldMap = rootType.getFields();
+
+    rootSelections.forEach((fieldNode: FieldNode) => {
+      const key = fieldNode.alias?.value ?? fieldNode.name.value;
+      const field = fieldMap[fieldNode.name.value];
+      data[key] = this.parseType(data[key], field.type, fieldNode);
+    }, data);
+
+    return result;
+  }
+
+  private parseType(value: any, type: GraphQLOutputType, node: FieldNode): any {
+    if (isNil(value)) {
+      return value;
+    }
+
+    if (isNonNullType(type)) {
+      return this.parseType(value, getNullableType(type), node);
+    }
+
+    if (isEnumType(type)) {
+      return this.getParser(type.name)(value);
+    }
+
+    if (isListType(type)) {
+      if (!Array.isArray(value)) {
+        return value;
+      }
+
+      return value.map((item) => this.parseType(item, type.ofType, node));
+    }
+
+    if (isObjectType(type)) {
+      node.selectionSet?.selections.forEach((selectionNode: SelectionNode) => {
+        if (isFieldNode(selectionNode)) {
+          const fieldMap = type.getFields();
+          const key = selectionNode.alias?.value ?? selectionNode.name.value;
+          const field = fieldMap[selectionNode.name.value];
+
+          if (isNil(field)) {
+            return value;
+          }
+
+          value[key] = this.parseType(value[key], field.type, selectionNode);
+
+          return value;
+        }
+      });
+      return value;
+    }
+
+    return value;
+  }
+
+  private getParser(enumName: string): EnumParserFn {
+    return this.parser?.[enumName] ?? this.defaultParser;
   }
 }

@@ -1,6 +1,7 @@
 import type { GraphQLSchema } from 'graphql';
 
 export type EnumSerializeFn = (value: any) => string | null;
+export type EnumParserFn = (value: any) => string | null;
 export type EnumValueMap = { [ClientValue: string]: string };
 
 export enum EnumValueFormat {
@@ -22,6 +23,8 @@ export interface EnumApolloLinkArgs {
   schema: GraphQLSchema;
   /* serialization options */
   serializer?: Record<string, EnumSerializeFn>;
+  /* parsing options */
+  parser?: Record<string, EnumParserFn>;
   /* shorthand options */
   enumValueMap?: Record<string, EnumValueMap>;
   valueFormat?: EnumValueFormats;
