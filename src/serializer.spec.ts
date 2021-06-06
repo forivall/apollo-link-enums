@@ -3,6 +3,7 @@ import { getOperationName } from '@apollo/client/utilities';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 
 import EnumApolloLink from './EnumApolloLink';
+import { EnumValueFormat } from './types';
 
 enum ServerAnimal {
   Dog = 'dog',
@@ -233,6 +234,357 @@ describe('The variables in the requests should be transformed', () => {
           animal: ServerAnimal.Cat,
           animals: [null, ServerAnimal.FancyCat],
           personInput: { person: ServerPerson.AnonymousUser },
+        });
+
+        return Observable.of(response);
+      }),
+    ]);
+
+    const observable = execute(link, request);
+
+    observable.subscribe(() => {
+      done();
+    });
+
+    expect.assertions(1);
+  });
+
+  it('camel case server value format', (done) => {
+    enum CamelCaseServerAnimal {
+      Dog = 'dog',
+      Cat = 'cat',
+      FancyCat = 'fancyCat',
+    }
+
+    enum CamelCaseServerPerson {
+      User = 'user',
+      AnonymousUser = 'anonymousUser',
+    }
+
+    const request = {
+      query,
+      variables: {
+        animal: ClientAnimal.CAT,
+        animals: [ClientAnimal.DOG, ClientAnimal.FANCY_CAT],
+        personInput: { person: ClientPerson.AnonymousUser },
+      },
+      operationName: getOperationName(query) ?? undefined,
+    };
+
+    const response = {
+      data: {
+        givenAnimal: CamelCaseServerAnimal.Cat,
+        givenAnimals: [CamelCaseServerAnimal.Dog, CamelCaseServerAnimal.FancyCat],
+        person: CamelCaseServerPerson.AnonymousUser,
+      },
+    };
+
+    const link = ApolloLink.from([
+      new EnumApolloLink({
+        schema,
+        valueFormat: {
+          client: EnumValueFormat.CamelCase,
+          server: EnumValueFormat.CamelCase,
+        },
+      }),
+      new ApolloLink((operation) => {
+        expect(operation.variables).toEqual({
+          animal: CamelCaseServerAnimal.Cat,
+          animals: [CamelCaseServerAnimal.Dog, CamelCaseServerAnimal.FancyCat],
+          personInput: { person: CamelCaseServerPerson.AnonymousUser },
+        });
+
+        return Observable.of(response);
+      }),
+    ]);
+
+    const observable = execute(link, request);
+
+    observable.subscribe(() => {
+      done();
+    });
+
+    expect.assertions(1);
+  });
+
+  it('pascal case server value format', (done) => {
+    enum PascalCaseServerAnimal {
+      Dog = 'Dog',
+      Cat = 'Cat',
+      FancyCat = 'FancyCat',
+    }
+
+    enum PascalCaseServerPerson {
+      User = 'User',
+      AnonymousUser = 'AnonymousUser',
+    }
+
+    const request = {
+      query,
+      variables: {
+        animal: ClientAnimal.CAT,
+        animals: [ClientAnimal.DOG, ClientAnimal.FANCY_CAT],
+        personInput: { person: ClientPerson.AnonymousUser },
+      },
+      operationName: getOperationName(query) ?? undefined,
+    };
+
+    const response = {
+      data: {
+        givenAnimal: PascalCaseServerAnimal.Cat,
+        givenAnimals: [PascalCaseServerAnimal.Dog, PascalCaseServerAnimal.FancyCat],
+        person: PascalCaseServerPerson.AnonymousUser,
+      },
+    };
+
+    const link = ApolloLink.from([
+      new EnumApolloLink({
+        schema,
+        valueFormat: {
+          client: EnumValueFormat.CamelCase,
+          server: EnumValueFormat.PascalCase,
+        },
+      }),
+      new ApolloLink((operation) => {
+        expect(operation.variables).toEqual({
+          animal: PascalCaseServerAnimal.Cat,
+          animals: [PascalCaseServerAnimal.Dog, PascalCaseServerAnimal.FancyCat],
+          personInput: { person: PascalCaseServerPerson.AnonymousUser },
+        });
+
+        return Observable.of(response);
+      }),
+    ]);
+
+    const observable = execute(link, request);
+
+    observable.subscribe(() => {
+      done();
+    });
+
+    expect.assertions(1);
+  });
+
+  it('kebab case server value format', (done) => {
+    enum KebabCaseServerAnimal {
+      Dog = 'dog',
+      Cat = 'cat',
+      FancyCat = 'fancy-cat',
+    }
+
+    enum KebabCaseServerPerson {
+      User = 'user',
+      AnonymousUser = 'anonymous-user',
+    }
+
+    const request = {
+      query,
+      variables: {
+        animal: ClientAnimal.CAT,
+        animals: [ClientAnimal.DOG, ClientAnimal.FANCY_CAT],
+        personInput: { person: ClientPerson.AnonymousUser },
+      },
+      operationName: getOperationName(query) ?? undefined,
+    };
+
+    const response = {
+      data: {
+        givenAnimal: KebabCaseServerAnimal.Cat,
+        givenAnimals: [KebabCaseServerAnimal.Dog, KebabCaseServerAnimal.FancyCat],
+        person: KebabCaseServerPerson.AnonymousUser,
+      },
+    };
+
+    const link = ApolloLink.from([
+      new EnumApolloLink({
+        schema,
+        valueFormat: {
+          client: EnumValueFormat.CamelCase,
+          server: EnumValueFormat.KebabCase,
+        },
+      }),
+      new ApolloLink((operation) => {
+        expect(operation.variables).toEqual({
+          animal: KebabCaseServerAnimal.Cat,
+          animals: [KebabCaseServerAnimal.Dog, KebabCaseServerAnimal.FancyCat],
+          personInput: { person: KebabCaseServerPerson.AnonymousUser },
+        });
+
+        return Observable.of(response);
+      }),
+    ]);
+
+    const observable = execute(link, request);
+
+    observable.subscribe(() => {
+      done();
+    });
+
+    expect.assertions(1);
+  });
+
+  it('snake case server value format', (done) => {
+    enum SnakeCaseServerAnimal {
+      Dog = 'dog',
+      Cat = 'cat',
+      FancyCat = 'fancy_cat',
+    }
+
+    enum SnakeCaseServerPerson {
+      User = 'user',
+      AnonymousUser = 'anonymous_user',
+    }
+
+    const request = {
+      query,
+      variables: {
+        animal: ClientAnimal.CAT,
+        animals: [ClientAnimal.DOG, ClientAnimal.FANCY_CAT],
+        personInput: { person: ClientPerson.AnonymousUser },
+      },
+      operationName: getOperationName(query) ?? undefined,
+    };
+
+    const response = {
+      data: {
+        givenAnimal: SnakeCaseServerAnimal.Cat,
+        givenAnimals: [SnakeCaseServerAnimal.Dog, SnakeCaseServerAnimal.FancyCat],
+        person: SnakeCaseServerPerson.AnonymousUser,
+      },
+    };
+
+    const link = ApolloLink.from([
+      new EnumApolloLink({
+        schema,
+        valueFormat: {
+          client: EnumValueFormat.CamelCase,
+          server: EnumValueFormat.SnakeCase,
+        },
+      }),
+      new ApolloLink((operation) => {
+        expect(operation.variables).toEqual({
+          animal: SnakeCaseServerAnimal.Cat,
+          animals: [SnakeCaseServerAnimal.Dog, SnakeCaseServerAnimal.FancyCat],
+          personInput: { person: SnakeCaseServerPerson.AnonymousUser },
+        });
+
+        return Observable.of(response);
+      }),
+    ]);
+
+    const observable = execute(link, request);
+
+    observable.subscribe(() => {
+      done();
+    });
+
+    expect.assertions(1);
+  });
+
+  it('screaming snake case server value format', (done) => {
+    enum ScreamingSnakeCaseServerAnimal {
+      Dog = 'DOG',
+      Cat = 'CAT',
+      FancyCat = 'FANCY_CAT',
+    }
+
+    enum ScreamingSnakeCaseServerPerson {
+      User = 'USER',
+      AnonymousUser = 'ANONYMOUS_USER',
+    }
+
+    const request = {
+      query,
+      variables: {
+        animal: ClientAnimal.CAT,
+        animals: [ClientAnimal.DOG, ClientAnimal.FANCY_CAT],
+        personInput: { person: ClientPerson.AnonymousUser },
+      },
+      operationName: getOperationName(query) ?? undefined,
+    };
+
+    const response = {
+      data: {
+        givenAnimal: ScreamingSnakeCaseServerAnimal.Cat,
+        givenAnimals: [ScreamingSnakeCaseServerAnimal.Dog, ScreamingSnakeCaseServerAnimal.FancyCat],
+        person: ScreamingSnakeCaseServerPerson.AnonymousUser,
+      },
+    };
+
+    const link = ApolloLink.from([
+      new EnumApolloLink({
+        schema,
+        valueFormat: {
+          client: EnumValueFormat.CamelCase,
+          server: EnumValueFormat.ScreamingSnakeCase,
+        },
+      }),
+      new ApolloLink((operation) => {
+        expect(operation.variables).toEqual({
+          animal: ScreamingSnakeCaseServerAnimal.Cat,
+          animals: [ScreamingSnakeCaseServerAnimal.Dog, ScreamingSnakeCaseServerAnimal.FancyCat],
+          personInput: { person: ScreamingSnakeCaseServerPerson.AnonymousUser },
+        });
+
+        return Observable.of(response);
+      }),
+    ]);
+
+    const observable = execute(link, request);
+
+    observable.subscribe(() => {
+      done();
+    });
+
+    expect.assertions(1);
+  });
+
+  it('server value format per enum', (done) => {
+    enum PascalCaseServerAnimal {
+      Dog = 'Dog',
+      Cat = 'Cat',
+      FancyCat = 'FancyCat',
+    }
+
+    enum SnakeCaseServerPerson {
+      User = 'user',
+      AnonymousUser = 'anonymous_user',
+    }
+
+    const request = {
+      query,
+      variables: {
+        animal: ClientAnimal.CAT,
+        animals: [ClientAnimal.DOG, ClientAnimal.FANCY_CAT],
+        personInput: { person: ClientPerson.AnonymousUser },
+      },
+      operationName: getOperationName(query) ?? undefined,
+    };
+
+    const response = {
+      data: {
+        givenAnimal: PascalCaseServerAnimal.Cat,
+        givenAnimals: [PascalCaseServerAnimal.Dog, PascalCaseServerAnimal.FancyCat],
+        person: SnakeCaseServerPerson.AnonymousUser,
+      },
+    };
+
+    const link = ApolloLink.from([
+      new EnumApolloLink({
+        schema,
+        valueFormat: {
+          client: EnumValueFormat.CamelCase,
+          server: EnumValueFormat.SnakeCase,
+          serverEnums: {
+            Animal: EnumValueFormat.PascalCase,
+          },
+        },
+      }),
+      new ApolloLink((operation) => {
+        expect(operation.variables).toEqual({
+          animal: PascalCaseServerAnimal.Cat,
+          animals: [PascalCaseServerAnimal.Dog, PascalCaseServerAnimal.FancyCat],
+          personInput: { person: SnakeCaseServerPerson.AnonymousUser },
         });
 
         return Observable.of(response);

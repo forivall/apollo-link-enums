@@ -9,10 +9,25 @@ import {
   isNonNullType,
 } from 'graphql';
 import type { GraphQLInputType, GraphQLSchema, NamedTypeNode, TypeNode } from 'graphql';
-import { isNil, mapValues } from 'lodash';
+import {
+  camelCase,
+  flow,
+  isNil,
+  kebabCase,
+  mapValues,
+  snakeCase,
+  toUpper,
+  upperFirst,
+} from 'lodash';
 import type { Subscription } from 'zen-observable-ts';
 
-import type { EnumApolloLinkArgs, EnumSerializeFn, EnumValueMap } from './types';
+import {
+  EnumApolloLinkArgs,
+  EnumSerializeFn,
+  EnumValueFormat,
+  EnumValueFormats,
+  EnumValueMap,
+} from './types';
 import { isListTypeNode, isNonNullTypeNode, isOperationDefinitionNode } from './util/NodeTypes';
 
 const noopSerializeFn: EnumSerializeFn = (value) => value;
@@ -24,14 +39,16 @@ export default class EnumApolloLink extends ApolloLink {
   private readonly defaultSerializer: EnumSerializeFn = noopSerializeFn;
 
   private readonly enumValueMap?: Record<string, EnumValueMap>;
+  private readonly valueFormat?: EnumValueFormats;
 
-  constructor({ schema, serializer, enumValueMap }: EnumApolloLinkArgs) {
+  constructor({ schema, serializer, enumValueMap, valueFormat }: EnumApolloLinkArgs) {
     super();
 
     this.schema = schema;
     this.serializer = serializer;
 
     this.enumValueMap = enumValueMap;
+    this.valueFormat = valueFormat;
   }
 
   public request(givenOperation: Operation, forward: NextLink): Observable<FetchResult> | null {
@@ -136,6 +153,7 @@ export default class EnumApolloLink extends ApolloLink {
     return (
       this.serializer?.[enumName] ??
       this.getSerializerFromValueMap(enumName) ??
+      this.getSerializerFromValueFormat(enumName) ??
       this.defaultSerializer
     );
   }
@@ -148,5 +166,28 @@ export default class EnumApolloLink extends ApolloLink {
     return (value: any) => {
       return this.enumValueMap?.[enumName]?.[value] ?? value;
     };
+  }
+
+  private getSerializerFromValueFormat(enumName: string): EnumSerializeFn | undefined {
+    const valueFormat = this.valueFormat?.serverEnums?.[enumName] ?? this.valueFormat?.server;
+
+    if (isNil(valueFormat)) {
+      return;
+    }
+
+    switch (valueFormat) {
+      case EnumValueFormat.CamelCase:
+        return camelCase;
+      case EnumValueFormat.PascalCase:
+        return flow(camelCase, upperFirst);
+      case EnumValueFormat.KebabCase:
+        return kebabCase;
+      case EnumValueFormat.SnakeCase:
+        return snakeCase;
+      case EnumValueFormat.ScreamingSnakeCase:
+        return flow(snakeCase, toUpper);
+      default:
+        return noopSerializeFn;
+    }
   }
 }
