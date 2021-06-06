@@ -1,6 +1,6 @@
 {
   "name": "apollo-link-enums",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Custom apollo link to parse custom enums, for apollo rest links",
   "main": "build/main/index.js",
   "repository": "https://github.com/inhibitor1217/apollo-link-enums",
