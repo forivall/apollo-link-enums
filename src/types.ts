@@ -19,6 +19,24 @@ export interface EnumValueFormats {
   serverEnums?: Record<string, EnumValueFormat>;
 }
 
+export interface EnumSerializerArgs {
+  schema: GraphQLSchema;
+  /* serialization options */
+  serializer?: Record<string, EnumSerializeFn>;
+  /* shorthand options */
+  enumValueMap?: Record<string, EnumValueMap>;
+  valueFormat?: EnumValueFormats;
+}
+
+export interface EnumParserArgs {
+  schema: GraphQLSchema;
+  /* parsing options */
+  parser?: Record<string, EnumParserFn>;
+  /* shorthand options */
+  enumValueMap?: Record<string, EnumValueMap>;
+  valueFormat?: EnumValueFormats;
+}
+
 export interface EnumApolloLinkArgs {
   schema: GraphQLSchema;
   /* serialization options */

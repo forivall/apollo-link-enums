@@ -1,69 +1,25 @@
 import { ApolloLink, Observable } from '@apollo/client/core';
 import type { FetchResult, NextLink, Operation } from '@apollo/client/core';
-import {
-  getNullableType,
-  isEnumType,
-  isInputObjectType,
-  isInputType,
-  isListType,
-  isNonNullType,
-  isObjectType,
-} from 'graphql';
-import type {
-  FieldNode,
-  FragmentDefinitionNode,
-  GraphQLInputType,
-  GraphQLOutputType,
-  GraphQLObjectType,
-  GraphQLSchema,
-  NamedTypeNode,
-  SelectionNode,
-  TypeNode,
-} from 'graphql';
-import { fromPairs, isNil, mapValues } from 'lodash';
+import type { FragmentDefinitionNode, OperationDefinitionNode } from 'graphql';
+import { fromPairs, isNil } from 'lodash';
 import type { Subscription } from 'zen-observable-ts';
 
-import type {
-  EnumApolloLinkArgs,
-  EnumSerializeFn,
-  EnumParserFn,
-  EnumValueFormats,
-  EnumValueMap,
-} from './types';
-import {
-  isFieldNode,
-  isFragmentDefinitionNode,
-  isListTypeNode,
-  isNonNullTypeNode,
-  isOperationDefinitionNode,
-} from './util/nodeTypes';
+import EnumParser from './EnumParser';
+import EnumSerializer from './EnumSerializer';
+import type { EnumApolloLinkArgs } from './types';
+import { isFragmentDefinitionNode, isOperationDefinitionNode } from './util/nodeTypes';
 import resolveFragments from './util/resolveFragments';
-import convertFn from './util/valueFormat';
-
-const noopSerializeFn: EnumSerializeFn = (value) => value;
-const noopParserFn: EnumParserFn = (value) => value;
 
 export default class EnumApolloLink extends ApolloLink {
-  private readonly schema: GraphQLSchema;
+  private readonly serializer: EnumSerializer;
 
-  private readonly serializer?: Record<string, EnumSerializeFn>;
-  private readonly defaultSerializer: EnumSerializeFn = noopSerializeFn;
-
-  private readonly parser?: Record<string, EnumParserFn>;
-  private readonly defaultParser: EnumParserFn = noopParserFn;
-
-  private readonly enumValueMap?: Record<string, EnumValueMap>;
-  private readonly valueFormat?: EnumValueFormats;
+  private readonly parser: EnumParser;
 
   constructor({ schema, serializer, parser, enumValueMap, valueFormat }: EnumApolloLinkArgs) {
     super();
 
-    this.schema = schema;
-    this.serializer = serializer;
-    this.parser = parser;
-
-    this.enumValueMap = enumValueMap;
-    this.valueFormat = valueFormat;
+    this.serializer = new EnumSerializer({ schema, serializer, enumValueMap, valueFormat });
+    this.parser = new EnumParser({ schema, parser, enumValueMap, valueFormat });
   }
 
   public request(givenOperation: Operation, forward: NextLink): Observable<FetchResult> | null {
@@ -100,96 +56,13 @@ export default class EnumApolloLink extends ApolloLink {
 
     variableDefinitions.forEach((variableDefinition) => {
       const key = variableDefinition.variable.name.value;
-      operation.variables[key] = this.serializeNode(
+      operation.variables[key] = this.serializer.serializeNode(
         operation.variables[key],
         variableDefinition.type
       );
     });
 
     return operation;
-  }
-
-  private serializeNode(value: any, node: TypeNode): any {
-    if (isNonNullTypeNode(node)) {
-      return this.serializeNode(value, node.type);
-    }
-
-    if (isListTypeNode(node)) {
-      if (Array.isArray(value)) {
-        return value.map((item) => this.serializeNode(item, node.type));
-      }
-
-      return value;
-    }
-
-    return this.serializeNamedTypeNode(value, node);
-  }
-
-  private serializeNamedTypeNode(value: any, node: NamedTypeNode): any {
-    const typeName = node.name.value;
-    const schemaType = this.schema.getType(typeName);
-
-    if (!schemaType || !isInputType(schemaType)) {
-      return value;
-    }
-
-    return this.serializeType(value, schemaType);
-  }
-
-  private serializeType(value: any, type: GraphQLInputType): any {
-    if (isNil(value)) {
-      return value;
-    }
-
-    if (isNonNullType(type)) {
-      return this.serializeType(value, getNullableType(type));
-    }
-
-    if (isEnumType(type)) {
-      return this.getSerializer(type.name)(value);
-    }
-
-    if (isListType(type)) {
-      if (!Array.isArray(value)) {
-        return value;
-      }
-
-      return value.map((item) => this.serializeType(item, type.ofType));
-    }
-
-    if (isInputObjectType(type)) {
-      const fields = type.getFields();
-      return mapValues(value, (item, key) => {
-        const field = fields[key];
-        return field ? this.serializeType(item, field.type) : item;
-      });
-    }
-
-    return value;
-  }
-
-  private getSerializer(enumName: string): EnumSerializeFn {
-    return (
-      this.serializer?.[enumName] ??
-      this.getSerializerFromValueMap(enumName) ??
-      this.getSerializerFromValueFormat(enumName) ??
-      this.defaultSerializer
-    );
-  }
-
-  private getSerializerFromValueMap(enumName: string): EnumSerializeFn | undefined {
-    if (!this.enumValueMap?.[enumName]) {
-      return;
-    }
-
-    return (value: any) => {
-      return this.enumValueMap?.[enumName]?.[value] ?? value;
-    };
-  }
-
-  private getSerializerFromValueFormat(enumName: string): EnumSerializeFn | undefined {
-    const valueFormat = this.valueFormat?.serverEnums?.[enumName] ?? this.valueFormat?.server;
-    return convertFn(valueFormat);
   }
 
   private pipeResult(operation: Operation, result: FetchResult): FetchResult {
@@ -206,109 +79,28 @@ export default class EnumApolloLink extends ApolloLink {
     }
 
     const fragmentNodes = operation.query.definitions.filter(isFragmentDefinitionNode);
-    const fragmentMap = fromPairs(fragmentNodes.map((node) => [node.name.value, node]));
 
-    const resolvedOperationNode = {
-      ...operationNode,
+    const resolvedOperationNode = this.resolveFragments(operationNode, fragmentNodes);
+
+    const parsedData = this.parser.parseNode(data, resolvedOperationNode);
+
+    return { ...result, data: parsedData };
+  }
+
+  private resolveFragments(
+    definitionNode: OperationDefinitionNode,
+    fragments: FragmentDefinitionNode[]
+  ): OperationDefinitionNode {
+    const fragmentMap = fromPairs(fragments.map((node) => [node.name.value, node]));
+
+    const resolvedDefinitionNode = {
+      ...definitionNode,
       selectionSet: {
-        ...operationNode.selectionSet,
-        selections: resolveFragments(operationNode.selectionSet.selections, fragmentMap),
+        ...definitionNode.selectionSet,
+        selections: resolveFragments(definitionNode.selectionSet.selections, fragmentMap),
       },
     };
 
-    const rootType = ((): GraphQLObjectType | null => {
-      switch (resolvedOperationNode.operation) {
-        case 'query':
-          return this.schema.getQueryType() ?? null;
-        case 'mutation':
-          return this.schema.getMutationType() ?? null;
-        case 'subscription':
-          return this.schema.getSubscriptionType() ?? null;
-      }
-    })();
-
-    if (isNil(rootType)) {
-      return result;
-    }
-
-    const rootSelections = resolvedOperationNode.selectionSet.selections.filter(isFieldNode);
-    const fieldMap = rootType.getFields();
-
-    rootSelections.forEach((fieldNode: FieldNode) => {
-      const key = fieldNode.alias?.value ?? fieldNode.name.value;
-      const field = fieldMap[fieldNode.name.value];
-      data[key] = this.parseType(data[key], field.type, fieldNode);
-    }, data);
-
-    return result;
-  }
-
-  private parseType(value: any, type: GraphQLOutputType, node: FieldNode): any {
-    if (isNil(value)) {
-      return value;
-    }
-
-    if (isNonNullType(type)) {
-      return this.parseType(value, getNullableType(type), node);
-    }
-
-    if (isEnumType(type)) {
-      return this.getParser(type.name)(value);
-    }
-
-    if (isListType(type)) {
-      if (!Array.isArray(value)) {
-        return value;
-      }
-
-      return value.map((item) => this.parseType(item, type.ofType, node));
-    }
-
-    if (isObjectType(type)) {
-      node.selectionSet?.selections.forEach((selectionNode: SelectionNode) => {
-        if (isFieldNode(selectionNode)) {
-          const fieldMap = type.getFields();
-          const key = selectionNode.alias?.value ?? selectionNode.name.value;
-          const field = fieldMap[selectionNode.name.value];
-
-          if (isNil(field)) {
-            return value;
-          }
-
-          value[key] = this.parseType(value[key], field.type, selectionNode);
-
-          return value;
-        }
-      });
-      return value;
-    }
-
-    return value;
-  }
-
-  private getParser(enumName: string): EnumParserFn {
-    return (
-      this.parser?.[enumName] ??
-      this.getParserFromValueMap(enumName) ??
-      this.getParserFromValueFormat(enumName) ??
-      this.defaultParser
-    );
-  }
-
-  private getParserFromValueMap(enumName: string): EnumParserFn | undefined {
-    const map = this.enumValueMap?.[enumName];
-
-    if (isNil(map)) {
-      return;
-    }
-
-    const reversedMap = fromPairs(Object.keys(map).map((key) => [map[key], key]));
-
-    return (value: any) => reversedMap[value];
-  }
-
-  private getParserFromValueFormat(enumName: string): EnumParserFn | undefined {
-    const valueFormat = this.valueFormat?.clientEnums?.[enumName] ?? this.valueFormat?.client;
-    return convertFn(valueFormat);
+    return resolvedDefinitionNode;
   }
 }
