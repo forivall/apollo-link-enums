@@ -20,19 +20,9 @@ import type {
   SelectionNode,
   TypeNode,
 } from 'graphql';
-import {
-  camelCase,
-  flow,
-  isNil,
-  kebabCase,
-  mapValues,
-  snakeCase,
-  toUpper,
-  upperFirst,
-} from 'lodash';
+import { fromPairs, isNil, mapValues } from 'lodash';
 import type { Subscription } from 'zen-observable-ts';
 
-import { EnumValueFormat } from './types';
 import type {
   EnumApolloLinkArgs,
   EnumSerializeFn,
@@ -48,6 +38,7 @@ import {
   isOperationDefinitionNode,
 } from './util/nodeTypes';
 import resolveFragments from './util/resolveFragments';
+import convertFn from './util/valueFormat';
 
 const noopSerializeFn: EnumSerializeFn = (value) => value;
 const noopParserFn: EnumParserFn = (value) => value;
@@ -198,25 +189,7 @@ export default class EnumApolloLink extends ApolloLink {
 
   private getSerializerFromValueFormat(enumName: string): EnumSerializeFn | undefined {
     const valueFormat = this.valueFormat?.serverEnums?.[enumName] ?? this.valueFormat?.server;
-
-    if (isNil(valueFormat)) {
-      return;
-    }
-
-    switch (valueFormat) {
-      case EnumValueFormat.CamelCase:
-        return camelCase;
-      case EnumValueFormat.PascalCase:
-        return flow(camelCase, upperFirst);
-      case EnumValueFormat.KebabCase:
-        return kebabCase;
-      case EnumValueFormat.SnakeCase:
-        return snakeCase;
-      case EnumValueFormat.ScreamingSnakeCase:
-        return flow(snakeCase, toUpper);
-      default:
-        return noopSerializeFn;
-    }
+    return convertFn(valueFormat);
   }
 
   private pipeResult(operation: Operation, result: FetchResult): FetchResult {
@@ -233,11 +206,7 @@ export default class EnumApolloLink extends ApolloLink {
     }
 
     const fragmentNodes = operation.query.definitions.filter(isFragmentDefinitionNode);
-
-    const fragmentMap = fragmentNodes.reduce((acc, node) => {
-      acc[node.name.value] = node;
-      return acc;
-    }, {} as Record<string, FragmentDefinitionNode>);
+    const fragmentMap = fromPairs(fragmentNodes.map((node) => [node.name.value, node]));
 
     const resolvedOperationNode = {
       ...operationNode,
@@ -318,6 +287,28 @@ export default class EnumApolloLink extends ApolloLink {
   }
 
   private getParser(enumName: string): EnumParserFn {
-    return this.parser?.[enumName] ?? this.defaultParser;
+    return (
+      this.parser?.[enumName] ??
+      this.getParserFromValueMap(enumName) ??
+      this.getParserFromValueFormat(enumName) ??
+      this.defaultParser
+    );
+  }
+
+  private getParserFromValueMap(enumName: string): EnumParserFn | undefined {
+    const map = this.enumValueMap?.[enumName];
+
+    if (isNil(map)) {
+      return;
+    }
+
+    const reversedMap = fromPairs(Object.keys(map).map((key) => [map[key], key]));
+
+    return (value: any) => reversedMap[value];
+  }
+
+  private getParserFromValueFormat(enumName: string): EnumParserFn | undefined {
+    const valueFormat = this.valueFormat?.clientEnums?.[enumName] ?? this.valueFormat?.client;
+    return convertFn(valueFormat);
   }
 }

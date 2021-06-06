@@ -3,6 +3,7 @@ import { getOperationName } from '@apollo/client/utilities';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 
 import EnumApolloLink from './EnumApolloLink';
+import { EnumValueFormat } from './types';
 
 enum ServerFruit {
   Apple = 'APPLE',
@@ -284,6 +285,98 @@ describe('The enums in the response should be transformed using parser', () => {
         parser: {
           Fruit: fruitParser,
           HttpStatus: httpStatusParser,
+        },
+      }),
+      new ApolloLink(() => Observable.of(response)),
+    ]);
+
+    const observable = execute(link, request);
+
+    observable.subscribe((value) => {
+      expect(value).toEqual(expectedResponse);
+      done();
+    });
+
+    expect.assertions(1);
+  });
+
+  it('using enum value map works', (done) => {
+    const request = {
+      query: fragmentQuery,
+      operationName: getOperationName(fragmentQuery) ?? undefined,
+    };
+
+    const response = {
+      data: {
+        shop: {
+          fruits: [ServerFruit.Apple, ServerFruit.GrapeFruit, ServerFruit.Peach],
+        },
+      },
+    };
+
+    const expectedResponse = {
+      data: {
+        shop: {
+          fruits: [ClientFruit.Apple, ClientFruit.GrapeFruit, ClientFruit.Peach],
+        },
+      },
+    };
+
+    const valueMap = {
+      Fruit: {
+        [ClientFruit.Apple]: ServerFruit.Apple,
+        [ClientFruit.BlueBerry]: ServerFruit.BlueBerry,
+        [ClientFruit.GrapeFruit]: ServerFruit.GrapeFruit,
+        [ClientFruit.Peach]: ServerFruit.Peach,
+      },
+    };
+
+    const link = ApolloLink.from([
+      new EnumApolloLink({
+        schema,
+        enumValueMap: valueMap,
+      }),
+      new ApolloLink(() => Observable.of(response)),
+    ]);
+
+    const observable = execute(link, request);
+
+    observable.subscribe((value) => {
+      expect(value).toEqual(expectedResponse);
+      done();
+    });
+
+    expect.assertions(1);
+  });
+
+  it('using value format works', (done) => {
+    const request = {
+      query: fragmentQuery,
+      operationName: getOperationName(fragmentQuery) ?? undefined,
+    };
+
+    const response = {
+      data: {
+        shop: {
+          fruits: [ServerFruit.Apple, ServerFruit.GrapeFruit, ServerFruit.Peach],
+        },
+      },
+    };
+
+    const expectedResponse = {
+      data: {
+        shop: {
+          fruits: [ClientFruit.Apple, ClientFruit.GrapeFruit, ClientFruit.Peach],
+        },
+      },
+    };
+
+    const link = ApolloLink.from([
+      new EnumApolloLink({
+        schema,
+        valueFormat: {
+          client: EnumValueFormat.PascalCase,
+          server: EnumValueFormat.ScreamingSnakeCase,
         },
       }),
       new ApolloLink(() => Observable.of(response)),
