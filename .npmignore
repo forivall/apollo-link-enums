@@ -1,0 +1,6 @@
+.husky/
+.vscode/
+node_modules/
+coverage/
+
+yarn-error.log
