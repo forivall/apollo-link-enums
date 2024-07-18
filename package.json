@@ -1,6 +1,6 @@
 {
   "name": "@forivall/apollo-link-enums",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Custom apollo link to parse custom enums, for apollo rest links",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
