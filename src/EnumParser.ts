@@ -60,6 +60,7 @@ export default class EnumParser {
       case 'subscription':
         return this.schema.getSubscriptionType() ?? null;
     }
+    return undefined as never;
   }
 
   private parseType(value: any, type: GraphQLOutputType, node: FieldNode): any {

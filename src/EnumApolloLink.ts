@@ -1,6 +1,6 @@
 import { ApolloLink, Observable } from '@apollo/client/core';
 import type { FetchResult, NextLink, Operation } from '@apollo/client/core';
-import type { FragmentDefinitionNode, OperationDefinitionNode } from 'graphql';
+import type { FragmentDefinitionNode, GraphQLError, OperationDefinitionNode } from 'graphql';
 import fromPairs from 'lodash-es/fromPairs';
 import isNil from 'lodash-es/isNil';
 import type { Subscription } from 'zen-observable-ts';
@@ -35,7 +35,7 @@ export default class EnumApolloLink extends ApolloLink {
             try {
               observer.next(this.pipeResult(operation, result));
             } catch (e) {
-              observer.next({ errors: [...(result.errors ?? []), e] });
+              observer.next({ errors: [...(result.errors ?? []), e as GraphQLError] });
             }
           },
           error: observer.error.bind(observer),
