@@ -11,7 +11,7 @@ import { fromPairs, isNil } from 'lodash';
 
 import type { EnumParserArgs, EnumParserFn, EnumValueFormats, EnumValueMap } from './types';
 import convertFn from './util/valueFormat';
-import { isFieldNode } from './util/nodeTypes';
+import { isFieldNode } from './util/NodeTypes';
 
 const noopParserFn: EnumParserFn = (value) => value;
 

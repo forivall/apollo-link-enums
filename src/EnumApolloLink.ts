@@ -7,7 +7,7 @@ import type { Subscription } from 'zen-observable-ts';
 import EnumParser from './EnumParser';
 import EnumSerializer from './EnumSerializer';
 import type { EnumApolloLinkArgs } from './types';
-import { isFragmentDefinitionNode, isOperationDefinitionNode } from './util/nodeTypes';
+import { isFragmentDefinitionNode, isOperationDefinitionNode } from './util/NodeTypes';
 import resolveFragments from './util/resolveFragments';
 
 export default class EnumApolloLink extends ApolloLink {

@@ -1,7 +1,7 @@
 import type { FragmentDefinitionNode, SelectionNode } from 'graphql';
 import { flatMap, isNil } from 'lodash';
 
-import { isFieldNode, isInlineFragmentNode } from './nodeTypes';
+import { isFieldNode, isInlineFragmentNode } from './NodeTypes';
 
 function mapToFieldNodes(
   selections: readonly SelectionNode[],

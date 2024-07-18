@@ -10,7 +10,7 @@ import type { GraphQLInputType, GraphQLSchema, NamedTypeNode, TypeNode } from 'g
 import { isNil, mapValues } from 'lodash';
 
 import type { EnumSerializeFn, EnumSerializerArgs, EnumValueFormats, EnumValueMap } from './types';
-import { isListTypeNode, isNonNullTypeNode } from './util/nodeTypes';
+import { isListTypeNode, isNonNullTypeNode } from './util/NodeTypes';
 import convertFn from './util/valueFormat';
 
 const noopSerializeFn: EnumSerializeFn = (value) => value;
