@@ -16,6 +16,7 @@
     "clean": "rm -r build/"
   },
   "devDependencies": {
+    "@babel/plugin-transform-modules-commonjs": "^7.24.8",
     "@graphql-tools/schema": "^7.1.5",
     "@types/jest": "^26.0.23",
     "@types/lodash-es": "^4.17.6",
