@@ -2,18 +2,22 @@
   "name": "apollo-link-enums",
   "version": "0.1.2",
   "description": "Custom apollo link to parse custom enums, for apollo rest links",
-  "main": "build/index.js",
+  "main": "build/main/index.js",
+  "typings": "build/main/index.d.ts",
+  "module": "build/module/index.js",
   "repository": "https://github.com/inhibitor1217/apollo-link-enums",
   "author": "inhibitor <inhibitor@kaist.ac.kr>",
   "license": "MIT",
   "scripts": {
     "prepare": "install-peers",
-    "build": "tsc -p tsconfig.json",
+    "build": "run-s clean && run-p build:*",
+    "build:main": "tsc -p tsconfig.json",
+    "build:module": "tsc -p tsconfig.module.json",
     "pre-commit": "yarn typecheck && yarn lint && yarn test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "npx eslint",
     "test": "npx jest --coverage -c jest.config.js",
-    "clean": "rm -r build/"
+    "clean": "trash build"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.24.8",
@@ -29,7 +33,9 @@
     "husky": "^6.0.0",
     "install-peers-cli": "^2.2.0",
     "jest": "^27.0.1",
+    "npm-run-all": "^4.1.5",
     "prettier": "^2.3.0",
+    "trash-cli": "^5.0.0",
     "ts-jest": "^27.0.1",
     "typescript": "^4.3.2",
     "zen-observable-ts": "^1.0.0"

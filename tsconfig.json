@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es6",
-    "outDir": "build",
+    "outDir": "build/main",
     "lib": ["dom", "dom.iterable", "esnext"],
     "baseUrl": "src",
     "declaration": true,
