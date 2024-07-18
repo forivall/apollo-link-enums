@@ -1,4 +1,4 @@
-# apollo-link-enums
+# @forivall/apollo-link-enums
 
 This is a custom apollo link, inspired by [apollo-link-scalars](https://github.com/eturino/apollo-link-scalars).
 

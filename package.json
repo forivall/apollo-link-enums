@@ -1,12 +1,15 @@
 {
-  "name": "apollo-link-enums",
+  "name": "@forivall/apollo-link-enums",
   "version": "0.1.2",
   "description": "Custom apollo link to parse custom enums, for apollo rest links",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
   "module": "build/module/index.js",
-  "repository": "https://github.com/inhibitor1217/apollo-link-enums",
+  "repository": "https://github.com/forivall/apollo-link-enums",
   "author": "inhibitor <inhibitor@kaist.ac.kr>",
+  "contributors": [
+    "Emily M Klassen <forivall@users.noreply.github.com>"
+  ],
   "license": "MIT",
   "scripts": {
     "prepare": "install-peers",
@@ -47,5 +50,8 @@
   },
   "peerDependencies": {
     "graphql": "^14.0.0 || ^15.0.0 || ^16.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
