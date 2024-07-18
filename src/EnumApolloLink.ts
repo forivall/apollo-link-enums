@@ -1,7 +1,8 @@
 import { ApolloLink, Observable } from '@apollo/client/core';
 import type { FetchResult, NextLink, Operation } from '@apollo/client/core';
 import type { FragmentDefinitionNode, OperationDefinitionNode } from 'graphql';
-import { fromPairs, isNil } from 'lodash';
+import fromPairs from 'lodash-es/fromPairs';
+import isNil from 'lodash-es/isNil';
 import type { Subscription } from 'zen-observable-ts';
 
 import EnumParser from './EnumParser';

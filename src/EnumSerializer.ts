@@ -7,7 +7,8 @@ import {
   isNonNullType,
 } from 'graphql';
 import type { GraphQLInputType, GraphQLSchema, NamedTypeNode, TypeNode } from 'graphql';
-import { isNil, mapValues } from 'lodash';
+import mapValues from 'lodash-es/mapValues';
+import isNil from 'lodash-es/isNil';
 
 import type { EnumSerializeFn, EnumSerializerArgs, EnumValueFormats, EnumValueMap } from './types';
 import { isListTypeNode, isNonNullTypeNode } from './util/NodeTypes';

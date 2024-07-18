@@ -1,5 +1,6 @@
 import type { FragmentDefinitionNode, SelectionNode } from 'graphql';
-import { flatMap, isNil } from 'lodash';
+import flatMap from 'lodash-es/flatMap';
+import isNil from 'lodash-es/isNil';
 
 import { isFieldNode, isInlineFragmentNode } from './NodeTypes';
 

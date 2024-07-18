@@ -7,7 +7,8 @@ import type {
   OperationDefinitionNode,
   SelectionNode,
 } from 'graphql';
-import { fromPairs, isNil } from 'lodash';
+import fromPairs from 'lodash-es/fromPairs';
+import isNil from 'lodash-es/isNil';
 
 import type { EnumParserArgs, EnumParserFn, EnumValueFormats, EnumValueMap } from './types';
 import convertFn from './util/valueFormat';
